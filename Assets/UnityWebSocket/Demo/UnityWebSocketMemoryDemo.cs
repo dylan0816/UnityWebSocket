@@ -11,6 +11,7 @@ namespace UnityWebSocket.Demo
         public string address = "wss://echo.websocket.events";
 
         private IWebSocket socket;
+        public bool TestOffset;
         private int receiveCount = 0;
 
         private void Start()
@@ -19,6 +20,20 @@ namespace UnityWebSocket.Demo
         }
 
         static readonly byte[] chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".ToCharArray().Select(c => (byte)c).ToArray();
+
+        byte[] buffs = new byte[1];
+
+        private byte[] RandomBuffer_offset(int length)
+        {
+            if (buffs.Length != length)
+                buffs = new byte[length];
+            for (int i = 0; i < length - 1; i++)
+            {
+                buffs[i] = chars[Random.Range(0, chars.Length)];
+            }
+
+            return buffs;
+        }
         private PooledBuffer RandomBuffer(int length)
         {
             PooledBuffer buffer = PooledBuffer.Create(Opcode.Binary);
@@ -46,7 +61,7 @@ namespace UnityWebSocket.Demo
                 }
 
                 socket.ConnectAsync();
-
+                //yield return new WaitForSeconds(2);
                 while (socket.ReadyState != WebSocketState.Open)
                 {
                     yield return null;
@@ -56,21 +71,38 @@ namespace UnityWebSocket.Demo
                 var sendCount = 0;
                 while (socket.ReadyState == WebSocketState.Open)
                 {
-                    // buffer with random length to detect reuse
-                    var message = RandomBuffer(Random.Range(1, 512));
 
-                    // buffer with 32 bytes to detect reuse
-                    // var message = RandomBuffer(32);
-#if UNITY_WEBSOCKET_DEMO_LOG
+                    if (TestOffset)
+                    {
+                        var len = Random.Range(1, 20);
+                        var message = RandomBuffer_offset(len);
+                        Debug.Log(string.Format("Send: {0}", System.Text.Encoding.UTF8.GetString(message, 0, len)));
+                        socket.SendAsync(message, 0, len);
+
+                    }
+                    else
+                    {
+                        // buffer with random length to detect reuse
+                        var message = RandomBuffer(Random.Range(1, 512));
+
+                        // buffer with 32 bytes to detect reuse
+                        // var message = RandomBuffer(32);
                     Debug.Log(string.Format("Send: {0}", message.Data));
-#endif
 
-                    socket.SendAsync(message);
+
+                        socket.SendAsync(message);
+
+                    }
+
                     sendCount += 1;
                     yield return delay;
                 }
             }
         }
+
+
+
+
 
         private void Socket_OnOpen(object sender, OpenEventArgs e)
         {
@@ -79,7 +111,7 @@ namespace UnityWebSocket.Demo
 
         private void Socket_OnMessage(object sender, PooledBuffer e)
         {
-#if UNITY_WEBSOCKET_DEMO_LOG
+#if !UNITY_WEBSOCKET_DEMO_LOG
             Debug.Log(string.Format("Recv: {0}", e.Data));
 #endif
 

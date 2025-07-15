@@ -32,8 +32,7 @@ var WebSocketLibrary =
      * Support Unity 6000
      *
      */
-    WebSocketSetSupport6000: function()
-    {
+    WebSocketSetSupport6000: function () {
         webSocketManager.support6000 = true;
     },
 
@@ -42,8 +41,7 @@ var WebSocketLibrary =
      *
      * @param callback Reference to C# static function
      */
-    WebSocketSetOnOpen: function(callback)
-    {
+    WebSocketSetOnOpen: function (callback) {
         webSocketManager.onOpen = callback;
     },
 
@@ -52,8 +50,7 @@ var WebSocketLibrary =
      *
      * @param callback Reference to C# static function
      */
-    WebSocketSetOnMessage: function(callback)
-    {
+    WebSocketSetOnMessage: function (callback) {
         webSocketManager.onMessage = callback;
     },
 
@@ -62,8 +59,7 @@ var WebSocketLibrary =
      *
      * @param callback Reference to C# static function
      */
-    WebSocketSetOnMessageStr: function(callback)
-    {
+    WebSocketSetOnMessageStr: function (callback) {
         webSocketManager.onMessageStr = callback;
     },
 
@@ -72,8 +68,7 @@ var WebSocketLibrary =
      *
      * @param callback Reference to C# static function
      */
-    WebSocketSetOnError: function(callback)
-    {
+    WebSocketSetOnError: function (callback) {
         webSocketManager.onError = callback;
     },
 
@@ -82,8 +77,7 @@ var WebSocketLibrary =
      *
      * @param callback Reference to C# static function
      */
-    WebSocketSetOnClose: function(callback)
-    {
+    WebSocketSetOnClose: function (callback) {
         webSocketManager.onClose = callback;
     },
 
@@ -92,8 +86,7 @@ var WebSocketLibrary =
      *
      * @param url Server URL
      */
-    WebSocketAllocate: function(urlPtr)
-    {
+    WebSocketAllocate: function (urlPtr) {
         var url = UTF8ToString(urlPtr);
         var id = ++webSocketManager.lastId;
         webSocketManager.instances[id] = {
@@ -110,15 +103,14 @@ var WebSocketLibrary =
      * @param instanceId Instance ID
      * @param protocol Sub Protocol
      */
-    WebSocketAddSubProtocol: function(instanceId, protocolPtr)
-    {
+    WebSocketAddSubProtocol: function (instanceId, protocolPtr) {
         var instance = webSocketManager.instances[instanceId];
         if (!instance) return -1;
 
         var protocol = UTF8ToString(protocolPtr);
-        
-        if (instance.subProtocols == null) 
-            instance.subProtocols = []; 
+
+        if (instance.subProtocols == null)
+            instance.subProtocols = [];
 
         instance.subProtocols.push(protocol);
 
@@ -133,8 +125,7 @@ var WebSocketLibrary =
      *
      * @param instanceId Instance ID
      */
-    WebSocketFree: function(instanceId)
-    {
+    WebSocketFree: function (instanceId) {
         var instance = webSocketManager.instances[instanceId];
         if (!instance) return 0;
 
@@ -147,14 +138,13 @@ var WebSocketLibrary =
 
         return 0;
     },
-    
+
     /**
      * Connect WebSocket to the server
      *
      * @param instanceId Instance ID
      */
-    WebSocketConnect: function(instanceId)
-    {
+    WebSocketConnect: function (instanceId) {
         var instance = webSocketManager.instances[instanceId];
         if (!instance) return -1;
         if (instance.ws !== null) return -2;
@@ -165,110 +155,85 @@ var WebSocketLibrary =
             instance.ws = new WebSocket(instance.url);
         // Set binaryType to arraybuffer to prevent blob message
         instance.ws.binaryType = 'arraybuffer';
-        instance.ws.onopen = function()
-        {
-            if (webSocketManager.support6000)
-            {
-                {{{ makeDynCall('vi', 'webSocketManager.onOpen') }}}(instanceId);
+        instance.ws.onopen = function () {
+            if (webSocketManager.support6000) {
+                { { { makeDynCall('vi', 'webSocketManager.onOpen') } } } (instanceId);
             }
-            else
-            {
+            else {
                 Module.dynCall_vi(webSocketManager.onOpen, instanceId);
             }
         };
 
-        instance.ws.onmessage = function(ev)
-        {
-            if (ev.data instanceof ArrayBuffer)
-            {
+        instance.ws.onmessage = function (ev) {
+            if (ev.data instanceof ArrayBuffer) {
                 var array = new Uint8Array(ev.data);
                 var buffer = _malloc(array.length);
                 writeArrayToMemory(array, buffer);
-                try
-                {
-                    if (webSocketManager.support6000)
-                    {
-                        {{{ makeDynCall('viii', 'webSocketManager.onMessage') }}}(instanceId, buffer, array.length);
+                try {
+                    if (webSocketManager.support6000) {
+                        { { { makeDynCall('viii', 'webSocketManager.onMessage') } } } (instanceId, buffer, array.length);
                     }
-                    else
-                    {
+                    else {
                         Module.dynCall_viii(webSocketManager.onMessage, instanceId, buffer, array.length);
                     }
                 }
-                finally
-                {
+                finally {
                     _free(buffer);
                 }
             }
-            else if (typeof ev.data == 'string')
-            {
+            else if (typeof ev.data == 'string') {
                 var length = lengthBytesUTF8(ev.data) + 1;
                 var buffer = _malloc(length);
                 stringToUTF8(ev.data, buffer, length);
-                try
-                {
-                    if (webSocketManager.support6000)
-                    {
-                        {{{ makeDynCall('vii', 'webSocketManager.onMessageStr') }}}(instanceId, buffer, length);
+                try {
+                    if (webSocketManager.support6000) {
+                        { { { makeDynCall('vii', 'webSocketManager.onMessageStr') } } } (instanceId, buffer, length);
                     }
-                    else
-                    {
+                    else {
                         Module.dynCall_vii(webSocketManager.onMessageStr, instanceId, buffer, length);
                     }
                 }
-                finally
-                {
+                finally {
                     _free(buffer);
                 }
             }
-            else
-            {
+            else {
                 console.log("[JSLIB WebSocket] not support message type: ", (typeof ev.data));
             }
         };
 
-        instance.ws.onerror = function(ev)
-        {
+        instance.ws.onerror = function (ev) {
             var msg = "WebSocket error.";
             var length = lengthBytesUTF8(msg) + 1;
             var buffer = _malloc(length);
             stringToUTF8(msg, buffer, length);
-            try
-            {
-                if (webSocketManager.support6000)
-                {
-                    {{{ makeDynCall('vii', 'webSocketManager.onError') }}}(instanceId, buffer);
+            try {
+                if (webSocketManager.support6000) {
+                    { { { makeDynCall('vii', 'webSocketManager.onError') } } } (instanceId, buffer);
                 }
-                else
-                {
+                else {
                     Module.dynCall_vii(webSocketManager.onError, instanceId, buffer);
                 }
             }
-            finally
-            {
+            finally {
                 _free(buffer);
             }
         };
 
-        instance.ws.onclose = function(ev)
-        {
+        instance.ws.onclose = function (ev) {
             var msg = ev.reason;
             var length = lengthBytesUTF8(msg) + 1;
             var buffer = _malloc(length);
             stringToUTF8(msg, buffer, length);
-            try
-            {
-                if (webSocketManager.support6000)
-                {
-                    {{{ makeDynCall('viii', 'webSocketManager.onClose') }}}(instanceId, ev.code, buffer);
+            try {
+                if (webSocketManager.support6000) {
+                    { { { makeDynCall('viii', 'webSocketManager.onClose') } } } (instanceId, ev.code, buffer);
                 }
-                else
-                {
+                else {
                     Module.dynCall_viii(webSocketManager.onClose, instanceId, ev.code, buffer);
                 }
             }
-            finally
-            {
+            finally {
                 _free(buffer);
             }
             instance.ws = null;
@@ -284,21 +249,18 @@ var WebSocketLibrary =
      * @param code Close status code
      * @param reasonPtr Pointer to reason string
      */
-    WebSocketClose: function(instanceId, code, reasonPtr)
-    {
+    WebSocketClose: function (instanceId, code, reasonPtr) {
         var instance = webSocketManager.instances[instanceId];
         if (!instance) return -1;
         if (instance.ws === null) return -3;
         if (instance.ws.readyState === 2) return -4;
         if (instance.ws.readyState === 3) return -5;
 
-        var reason = ( reasonPtr ? UTF8ToString(reasonPtr) : undefined );
-        try
-        {
+        var reason = (reasonPtr ? UTF8ToString(reasonPtr) : undefined);
+        try {
             instance.ws.close(code, reason);
         }
-        catch (err)
-        {
+        catch (err) {
             return -7;
         }
 
@@ -312,17 +274,16 @@ var WebSocketLibrary =
      * @param bufferPtr Pointer to the message buffer
      * @param length Length of the message in the buffer
      */
-    WebSocketSend: function(instanceId, bufferPtr, length)
-    {
+    WebSocketSend: function (instanceId, bufferPtr,offset, length) {
         var instance = webSocketManager.instances[instanceId];
         if (!instance) return -1;
         if (instance.ws === null) return -3;
         if (instance.ws.readyState !== 1) return -6;
 
         if (typeof HEAPU8 !== 'undefined')
-            instance.ws.send(HEAPU8.buffer.slice(bufferPtr, bufferPtr + length));
+            instance.ws.send(HEAPU8.buffer.slice(bufferPtr + offset, bufferPtr + length));
         else if (typeof buffer !== 'undefined')
-            instance.ws.send(buffer.slice(bufferPtr, bufferPtr + length));
+            instance.ws.send(buffer.slice(bufferPtr + offset, bufferPtr + length));
         else
             return -8; // not support buffer slice
 
@@ -335,8 +296,7 @@ var WebSocketLibrary =
      * @param instanceId Instance ID
      * @param stringPtr Pointer to the message string
      */
-    WebSocketSendStr: function(instanceId, stringPtr)
-    {
+    WebSocketSendStr: function (instanceId, stringPtr) {
         var instance = webSocketManager.instances[instanceId];
         if (!instance) return -1;
         if (instance.ws === null) return -3;
@@ -352,12 +312,11 @@ var WebSocketLibrary =
      *
      * @param instanceId Instance ID
      */
-    WebSocketGetState: function(instanceId)
-    {
+    WebSocketGetState: function (instanceId) {
         var instance = webSocketManager.instances[instanceId];
         if (!instance) return -1;
         if (instance.ws === null) return 3; // socket null as closed
-        
+
         return instance.ws.readyState;
     }
 };

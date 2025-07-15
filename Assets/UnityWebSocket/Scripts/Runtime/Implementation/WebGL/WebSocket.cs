@@ -90,12 +90,13 @@ namespace UnityWebSocket
             if (code < 0) HandleOnError(GetErrorMessageFromCode(code));
         }
 
-        public void SendAsync(byte[] data)
+        public void SendAsync(byte[] data, int offset, int length)
         {
             Log($"Send, type: {Opcode.Binary}, size: {data.Length}");
-            int code = WebSocketManager.WebSocketSend(instanceId, data, data.Length);
+            int code = WebSocketManager.WebSocketSend(instanceId, data, offset, length);
             if (code < 0) HandleOnError(GetErrorMessageFromCode(code));
         }
+        public void SendAsync(byte[] data) => SendAsync(data, 0, data.Length);
 
         public void SendAsync(PooledBuffer buffer)
         {
@@ -107,7 +108,7 @@ namespace UnityWebSocket
             }
             else
             {
-                code = WebSocketManager.WebSocketSend(instanceId, buffer.Bytes, buffer.Length);
+                code = WebSocketManager.WebSocketSend(instanceId, buffer.Bytes, 0, buffer.Length);
             }
             if (code < 0) HandleOnError(GetErrorMessageFromCode(code));
             buffer.Dispose();

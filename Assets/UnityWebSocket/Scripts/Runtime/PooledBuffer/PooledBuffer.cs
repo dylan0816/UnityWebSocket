@@ -130,11 +130,11 @@ namespace UnityWebSocket
             return buffer;
         }
 
-        public static PooledBuffer Create(Opcode opcode, byte[] data)
+        public static PooledBuffer Create(Opcode opcode, byte[] data, int offset, int length)
         {
             var buffer = Create();
             buffer.Opcode = opcode;
-            buffer.Write(data, 0, data.Length, 0);
+            buffer.Write(data, offset, length, 0);
             return buffer;
         }
 

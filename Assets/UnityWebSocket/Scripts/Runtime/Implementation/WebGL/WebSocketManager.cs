@@ -37,7 +37,7 @@ namespace UnityWebSocket
         public static extern int WebSocketClose(int instanceId, int code, string reason);
 
         [DllImport("__Internal")]
-        public static extern int WebSocketSend(int instanceId, byte[] dataPtr, int dataLength);
+        public static extern int WebSocketSend(int instanceId, byte[] dataPtr, int offset, int dataLength);
 
         [DllImport("__Internal")]
         public static extern int WebSocketSendStr(int instanceId, string data);
@@ -69,7 +69,7 @@ namespace UnityWebSocket
 
         [DllImport("__Internal")]
         public static extern void WebSocketSetOnClose(OnCloseCallback callback);
-        
+
         [DllImport("__Internal")]
         public static extern void WebSocketSetSupport6000();
 

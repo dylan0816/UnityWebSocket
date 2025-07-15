@@ -13,7 +13,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net.WebSockets;
-using System.IO;
 using System.Collections.Concurrent;
 
 namespace UnityWebSocket
@@ -115,18 +114,20 @@ namespace UnityWebSocket
             sendQueue.Enqueue(buffer);
         }
 
-        public void SendAsync(byte[] data)
+        public void SendAsync(byte[] data, int offset, int length)
         {
             if (!isOpening) return;
-            var buffer = PooledBuffer.Create(Opcode.Binary, data);
+            var buffer = PooledBuffer.Create(Opcode.Binary, data, offset, length);
             sendQueue.Enqueue(buffer);
         }
+        public void SendAsync(byte[] data) => SendAsync(data, 0, data.Length);
+
 
         public void SendAsync(string text)
         {
             if (!isOpening) return;
             var data = Encoding.UTF8.GetBytes(text);
-            var buffer = PooledBuffer.Create(Opcode.Text, data);
+            var buffer = PooledBuffer.Create(Opcode.Text, data, 0, data.Length);
             sendQueue.Enqueue(buffer);
         }
 
@@ -187,7 +188,7 @@ namespace UnityWebSocket
                     while (!closeProcessing && sendQueue.Count > 0 && sendQueue.TryDequeue(out buffer))
                     {
                         Log($"Send, type: {buffer.Opcode}, size: {buffer.Length}, queue left: {sendQueue.Count}");
-                        await socket.SendAsync(new ArraySegment<byte>(buffer.Bytes), buffer.Opcode == Opcode.Text ? WebSocketMessageType.Text : WebSocketMessageType.Binary, true, cts.Token);
+                        await socket.SendAsync(new ArraySegment<byte>(buffer.Bytes, 0, buffer.Length), buffer.Opcode == Opcode.Text ? WebSocketMessageType.Text : WebSocketMessageType.Binary, true, cts.Token);
                         buffer.Dispose();
                     }
                     Thread.Sleep(3);
