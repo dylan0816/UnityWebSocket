@@ -103,7 +103,14 @@ namespace UnityWebSocket
         public void SendAsync(byte[] data)
         {
             if (!isOpening) return;
-            var buffer = new SendBuffer(data, WebSocketMessageType.Binary);
+            var buffer = new SendBuffer(data, data.Length, WebSocketMessageType.Binary);
+            sendQueue.Enqueue(buffer);
+        }
+
+        public void SendAsync(byte[] data, int length)
+        {
+            if (!isOpening) return;
+            var buffer = new SendBuffer(data, length, WebSocketMessageType.Binary);
             sendQueue.Enqueue(buffer);
         }
 
@@ -111,7 +118,7 @@ namespace UnityWebSocket
         {
             if (!isOpening) return;
             var data = Encoding.UTF8.GetBytes(text);
-            var buffer = new SendBuffer(data, WebSocketMessageType.Text);
+            var buffer = new SendBuffer(data, data.Length, WebSocketMessageType.Text);
             sendQueue.Enqueue(buffer);
         }
         #endregion
@@ -119,11 +126,13 @@ namespace UnityWebSocket
         class SendBuffer
         {
             public byte[] data;
+            public int length;
             public WebSocketMessageType type;
-            public SendBuffer(byte[] data, WebSocketMessageType type)
+            public SendBuffer(byte[] data, int length, WebSocketMessageType type)
             {
                 this.data = data;
                 this.type = type;
+                this.length = length;
             }
         }
 
